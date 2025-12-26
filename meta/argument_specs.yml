@@ -1,0 +1,22 @@
+---
+argument_specs:
+  main:
+    short_description: Requirements for cloudbeaver postgresql pre args
+    options:
+
+      POSTGRES_HOST_NAME:
+        type: str
+
+      POSTGRES_PORT:
+        type: int
+
+      POSTGRES_USER:
+        type: str
+
+      POSTGRES_PASSWORD:
+        type: str
+        no_log: true 
+
+      POSTGRES_DATABASE:
+        type: str
+

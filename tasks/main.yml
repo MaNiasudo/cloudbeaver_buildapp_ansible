@@ -1,0 +1,140 @@
+---
+# Install Git
+- name: Install Git
+  ansible.builtin.apt:
+    name: git
+    state: present
+
+# Install Java21
+- name: Install Java21
+  ansible.builtin.apt:
+    name: openjdk-21-jdk
+    state: present
+
+# Install Apache Maven
+- name: Download Apache Maven {{ maven_version }}
+  ansible.builtin.get_url:
+    url: "https://downloads.apache.org/maven/maven-3/{{ maven_version }}/binaries/apache-maven-{{ maven_version }}-bin.tar.gz"
+    dest: "/tmp/apache-maven-{{ maven_version }}-bin.tar.gz"
+    mode: '0644'
+  
+- name: Extract Apache Maven
+  ansible.builtin.unarchive:
+    src: "/tmp/apache-maven-{{ maven_version }}-bin.tar.gz"
+    dest: "{{ maven_install_dir }}"
+    remote_src: true
+
+- name: Create Maven symlink
+  ansible.builtin.file:
+    src: "{{ maven_home }}"
+    dest: "{{ maven_install_dir }}/maven"
+    state: link
+    force: true
+
+- name: Set Maven environment variables
+  ansible.builtin.copy:
+    dest: /etc/profile.d/maven.sh
+    mode: '0644'
+    content: |
+      export MAVEN_HOME={{ maven_install_dir }}/maven
+      export PATH=$MAVEN_HOME/bin:$PATH
+
+- name: Symlink mvn into /usr/local/bin
+  ansible.builtin.file:
+    src: "{{ maven_install_dir }}/maven/bin/mvn"
+    dest: /usr/local/bin/mvn
+    state: link
+    force: true
+
+
+# Install npm Node.js (22.x)
+- name: Ensure dependencies are present for node. 
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - python3-debian
+      - gnupg2
+    state: present
+
+- name: Download NodeSource's signing key.
+  ansible.builtin.get_url:
+    url: https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key
+    dest: /etc/apt/signing-key-nodesource-repo.asc
+    owner: root
+    group: root
+    mode: '0444'
+  register: node_signing_key
+
+- name: Add NodeSource repositories for Node.js.
+  ansible.builtin.deb822_repository:
+    name: nodesource_{{ nodejs_version }}
+    uris: "https://deb.nodesource.com/node_{{ nodejs_version }}"
+    types: deb
+    suites: nodistro
+    components: main
+    signed_by: "{{ node_signing_key.dest }}"
+    state: present
+  register: node_repo
+
+- name: Update apt cache if repo was added.
+  ansible.builtin.apt: update_cache=yes
+  when: node_repo is changed
+
+- name: Ensure Node.js and npm are installed.
+  ansible.builtin.apt:
+    name: "nodejs={{ nodejs_version | regex_replace('x', '') }}*"
+    state: present
+
+# Install Yarn 4.x
+- name: Install Yarn (4.x)
+  ansible.builtin.command:
+    cmd: corepack enable
+    creates: /usr/bin/yarn
+
+- name: Activate Yarn 4
+  ansible.builtin.command:
+    cmd: corepack prepare yarn@4 --activate --yes
+
+- name: Ensure source root exists for cloudbeaver
+  ansible.builtin.file:
+    path: "{{ cloudbeaver_src_root }}"
+    state: directory
+    mode: '0755'
+
+- name: Clone cloudbeaver
+  ansible.builtin.git:
+    repo: https://github.com/dbeaver/cloudbeaver.git
+    dest: "{{ cloudbeaver_repo_dir }}"
+    update: yes
+
+- name: Ensure CloudBeaver build script is executable
+  ansible.builtin.file:
+    path: /opt/src/cloudbeaver/deploy/build.sh
+    mode: '0755'
+
+- name: Build CloudBeaver
+  ansible.builtin.command:
+    cmd: ./build.sh
+    chdir: /opt/src/cloudbeaver/deploy
+
+- name: Copy its config template with removed Authentication
+  ansible.builtin.template:
+    src: remove-auth-conf.j2
+    dest: "{{cloudbeaver_app_dir}}/conf/cloudbeaver.conf"
+
+# Need argument_specs and conditions so when they were present run this task
+- name: Copy its config file for pre added database
+  ansible.builtin.template:
+    src: preconfig-db.j2
+    dest: "{{cloudbeaver_app_dir}}/workspace/GlobalConfiguration/.dbeaver/data-sources.json"
+  when:
+    - POSTGRES_HOST_NAME is defined
+    - POSTGRES_PORT is defined
+    - POSTGRES_USER is defined
+    - POSTGRES_PASSWORD is defined
+    - POSTGRES_DATABASE is defined
+
+- name: Launch cloudbeaver
+  ansible.builtin.command:
+    cmd: ./run-cloudbeaver-server.sh
+    chdir: "{{cloudbeaver_app_dir}}"

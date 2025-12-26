@@ -1,0 +1,19 @@
+{
+  "folders": {},
+  "connections": {
+    "postgres-preconfigured": {
+      "provider": "postgresql",
+      "driver": "postgres-jdbc",
+      "name": "PostgreSQL@EasyEnv.io",
+      "configuration": {
+        "host": "{{ POSTGRES_HOST_NAME }}",
+        "port": "{{ POSTGRES_PORT | string }}",
+        "database": "{{ POSTGRES_DATABASE }}",
+        "url": "jdbc:postgresql://{{ POSTGRES_HOST_NAME }}:{{POSTGRES_PORT}}/{{ POSTGRES_DATABASE }}",
+        "user": "{{ POSTGRES_USER }}",
+        "password": "{{ POSTGRES_PASSWORD }}",
+        "configurationType": "MANUAL"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+#SPDX-License-Identifier: MIT-0
+---
+# Node js default
+nodejs_version: "22.x"
+
+
+# Maven apache default
+maven_version: "3.9.12"
+maven_install_dir: /opt
+maven_home: "{{ maven_install_dir }}/apache-maven-{{ maven_version }}"
+
+
+# cloudbeaver
+cloudbeaver_src_root: /opt/src
+cloudbeaver_repo_dir: "{{ cloudbeaver_src_root }}/cloudbeaver"
+cloudbeaver_app_dir: /opt/src/cloudbeaver/deploy/cloudbeaver
