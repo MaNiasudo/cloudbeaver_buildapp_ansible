@@ -1,4 +1,23 @@
 ---
+# Clean up 
+- name: Remove all NodeSource repository files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/apt/sources.list.d/nodesource.list
+    - /etc/apt/sources.list.d/nodesource.sources
+
+- name: Remove legacy NodeSource signing key
+  ansible.builtin.file:
+    path: /etc/apt/signing-key-nodesource-repo.asc
+    state: absent
+
+- name: Remove modern NodeSource signing key (if mismatched)
+  ansible.builtin.file:
+    path: /usr/share/keyrings/nodesource.gpg
+    state: absent
+    
 # Install Git
 - name: Install Git
   ansible.builtin.apt:
@@ -8,9 +27,9 @@
 # Install Java21
 - name: Install Java21
   ansible.builtin.apt:
-    name: openjdk-21-jdk
+    name: openjdk-21-jre-headless
     state: present
-
+ 
 # Install Apache Maven
 - name: Download Apache Maven {{ maven_version }}
   ansible.builtin.get_url:
@@ -61,7 +80,7 @@
     dest: /etc/apt/signing-key-nodesource-repo.asc
     owner: root
     group: root
-    mode: '0444'
+    mode: '0644'
   register: node_signing_key
 
 - name: Add NodeSource repositories for Node.js.
@@ -92,7 +111,7 @@
 
 - name: Activate Yarn 4
   ansible.builtin.command:
-    cmd: corepack prepare yarn@4 --activate --yes
+    cmd: corepack prepare yarn@4 --activate
 
 - name: Ensure source root exists for cloudbeaver
   ansible.builtin.file:
@@ -121,7 +140,7 @@
   ansible.builtin.template:
     src: remove-auth-conf.j2
     dest: "{{cloudbeaver_app_dir}}/conf/cloudbeaver.conf"
-    
+
  # Build cloudbeaver downloadable app
 - name: Ensure cloudbeaver_app folder exists
   ansible.builtin.file:
@@ -134,7 +153,3 @@
     path: /opt/src/cloudbeaver/deploy/cloudbeaver
     dest: /opt/src/cloudbeaver_app/cloudbeaver-1.0.0-ansible-tar.gz
     format: gz
-
-
-
-
