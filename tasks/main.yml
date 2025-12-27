@@ -46,7 +46,6 @@
     state: link
     force: true
 
-
 # Install npm Node.js (22.x)
 - name: Ensure dependencies are present for node. 
   ansible.builtin.apt:
@@ -101,6 +100,7 @@
     state: directory
     mode: '0755'
 
+# Build cloudbeaver app
 - name: Clone cloudbeaver
   ansible.builtin.git:
     repo: https://github.com/dbeaver/cloudbeaver.git
@@ -121,20 +121,20 @@
   ansible.builtin.template:
     src: remove-auth-conf.j2
     dest: "{{cloudbeaver_app_dir}}/conf/cloudbeaver.conf"
+    
+ # Build cloudbeaver downloadable app
+- name: Ensure cloudbeaver_app folder exists
+  ansible.builtin.file:
+    dest: /opt/src/cloudbeaver_app
+    steate: directory
+    mode: "0755"
 
-# Need argument_specs and conditions so when they were present run this task
-- name: Copy its config file for pre added database
-  ansible.builtin.template:
-    src: preconfig-db.j2
-    dest: "{{cloudbeaver_app_dir}}/workspace/GlobalConfiguration/.dbeaver/data-sources.json"
-  when:
-    - POSTGRES_HOST_NAME is defined
-    - POSTGRES_PORT is defined
-    - POSTGRES_USER is defined
-    - POSTGRES_PASSWORD is defined
-    - POSTGRES_DATABASE is defined
+- name: Create CloudBeaver tar.gz archive
+  ansible.builtin.archive:
+    path: /opt/src/cloudbeaver/deploy/cloudbeaver
+    dest: /opt/src/cloudbeaver_app/cloudbeaver-1.0.0-ansible-tar.gz
+    format: gz
 
-- name: Launch cloudbeaver
-  ansible.builtin.command:
-    cmd: ./run-cloudbeaver-server.sh
-    chdir: "{{cloudbeaver_app_dir}}"
+
+
+
