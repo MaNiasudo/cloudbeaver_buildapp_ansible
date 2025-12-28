@@ -136,6 +136,7 @@
     yes | ./build.sh 2>&1 | tee /var/log/cloudbeaver-build.log
   args:
     chdir: /opt/src/cloudbeaver/deploy
+    creates: /opt/src/cloudbeaver/deploy/cloudbeaver
 
 - name: Copy its config template with removed Authentication
   ansible.builtin.template:
