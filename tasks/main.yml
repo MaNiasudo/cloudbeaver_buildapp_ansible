@@ -131,9 +131,10 @@
     path: /opt/src/cloudbeaver/deploy/build.sh
     mode: '0755'
 
-- name: Build CloudBeaver
-  ansible.builtin.command:
-    cmd: ./build.sh
+- name: Build CloudBeaver # check logs with  (tail -f /var/log/cloudbeaver-build.log)
+  ansible.builtin.shell: |
+    yes | ./build.sh 2>&1 | tee /var/log/cloudbeaver-build.log
+  args:
     chdir: /opt/src/cloudbeaver/deploy
 
 - name: Copy its config template with removed Authentication
@@ -144,8 +145,8 @@
  # Build cloudbeaver downloadable app
 - name: Ensure cloudbeaver_app folder exists
   ansible.builtin.file:
-    dest: /opt/src/cloudbeaver_app
-    steate: directory
+    path: /opt/src/cloudbeaver_app
+    state: directory
     mode: "0755"
 
 - name: Create CloudBeaver tar.gz archive
